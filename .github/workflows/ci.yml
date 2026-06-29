@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   test:
-    name: Test uvx package
+    name: Test uvx and container
     runs-on: ubuntu-latest
 
     steps:
@@ -39,5 +39,8 @@ jobs:
       - name: Build package
         run: uv build
 
-      - name: UVX help check
+      - name: UVX import check
         run: uvx --from . python -c "import notifymcp; print(notifymcp.__version__)"
+
+      - name: Docker build
+        run: docker build -t notifymcp:ci .
