@@ -1,4 +1,4 @@
-name: Publish Docker image
+name: Docker Hub Publish
 
 on:
   push:
@@ -29,21 +29,21 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Docker metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/notifymcp
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=sha-
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
       - name: Build and push
-        shell: bash
-        env:
-          IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/notifymcp
-        run: |
-          set -euo pipefail
-          short_sha="${GITHUB_SHA::7}"
-          tags=("-t" "${IMAGE_NAME}:sha-${short_sha}")
-
-          if [[ "${GITHUB_REF_TYPE}" == "branch" && "${GITHUB_REF_NAME}" == "main" ]]; then
-            tags+=("-t" "${IMAGE_NAME}:latest")
-          fi
-
-          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
-            tags+=("-t" "${IMAGE_NAME}:${GITHUB_REF_NAME}")
-          fi
-
-          docker buildx build --push "${tags[@]}" .
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
