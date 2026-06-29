@@ -1,6 +1,6 @@
 # NotifyMCP
 
-NotifyMCP is a small containerized FastMCP server that lets an agent publish messages to a configured MQTT topic.
+NotifyMCP is a small FastMCP server that lets an agent publish messages to a configured MQTT topic.
 
 It is intended to pair with the NotifyMQTT Android app: an agent calls the MCP tool, NotifyMCP publishes to MQTT, and NotifyMQTT turns that MQTT message into a phone notification.
 
@@ -40,46 +40,61 @@ Optional:
 
 `mqtt://` and `tcp://` default to port `1883`. `mqtts://` and `ssl://` default to port `8883` and enable TLS.
 
-## Run locally
+## Run with uvx from GitHub
+
+You can run the MCP server directly from the GitHub repo with uvx:
 
 ```bash
-cp .env.example .env
-# edit .env
+export MQTT_URL="mqtt://192.168.1.10:1883"
+export MQTT_USERNAME=""
+export MQTT_PASSWORD=""
+export MQTT_TOPIC="notify/test"
 
-docker compose build
-docker compose run --rm notifymcp
+uvx --from git+https://github.com/mbush91/NotifyMCP notifymcp
 ```
 
-The container runs the MCP server over stdio, which is the simplest mode for MCP hosts that launch tools as subprocesses/containers.
+For a fixed version, use a tag or commit:
+
+```bash
+uvx --from git+https://github.com/mbush91/NotifyMCP@v0.1.0 notifymcp
+```
 
 ## Example MCP client config
 
-Use a command like this from an MCP-capable host that can launch Docker:
+Use a command like this from an MCP-capable host that can launch `uvx`:
 
 ```json
 {
   "mcpServers": {
     "notifymcp": {
-      "command": "docker",
+      "command": "uvx",
       "args": [
-        "run",
-        "--rm",
-        "-i",
-        "--env-file",
-        "/absolute/path/to/NotifyMCP/.env",
-        "notifymcp:local"
-      ]
+        "--from",
+        "git+https://github.com/mbush91/NotifyMCP",
+        "notifymcp"
+      ],
+      "env": {
+        "MQTT_URL": "mqtt://192.168.1.10:1883",
+        "MQTT_USERNAME": "",
+        "MQTT_PASSWORD": "",
+        "MQTT_TOPIC": "notify/test"
+      }
     }
   }
 }
 ```
 
-## Development
+## Local development
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e '.[dev]'
-ruff check .
-pytest
+uv sync --extra dev
+uv run ruff check .
+uv run pytest
+uv build
+```
+
+You can also smoke-test the local checkout through uvx:
+
+```bash
+uvx --from . notifymcp
 ```
