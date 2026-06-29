@@ -1,0 +1,8 @@
+services:
+  notifymcp:
+    build: .
+    image: notifymcp:local
+    env_file:
+      - .env
+    stdin_open: true
+    tty: false
