@@ -4,6 +4,8 @@ NotifyMCP is a small FastMCP server that lets an agent publish messages to a con
 
 It is intended to pair with the NotifyMQTT Android app: an agent calls the MCP tool, NotifyMCP publishes to MQTT, and NotifyMQTT turns that MQTT message into a phone notification.
 
+NotifyMCP can run either directly with `uvx` or as a Docker container pulled from Docker Hub.
+
 ## Tools
 
 ### `publish_message`
@@ -59,9 +61,45 @@ For a fixed version, use a tag or commit:
 uvx --from git+https://github.com/mbush91/NotifyMCP@v0.1.0 notifymcp
 ```
 
-## Example MCP client config
+## Run from Docker Hub
 
-Use a command like this from an MCP-capable host that can launch `uvx`:
+After the Docker Hub publish workflow has run, pull and run the image:
+
+```bash
+docker pull <dockerhub-username>/notifymcp:latest
+
+docker run --rm -i \
+  -e MQTT_URL="mqtt://192.168.1.10:1883" \
+  -e MQTT_USERNAME="" \
+  -e MQTT_PASSWORD="" \
+  -e MQTT_TOPIC="notify/test" \
+  <dockerhub-username>/notifymcp:latest
+```
+
+The container runs the MCP server over stdio, so keep `-i` when using it from an MCP host.
+
+## Docker Hub publishing
+
+The `Docker Hub Publish` GitHub Actions workflow pushes images on:
+
+- pushes to `main` as `latest` and `sha-<commit>`
+- tags like `v0.1.0` as semver Docker tags
+- manual `workflow_dispatch` runs
+
+Configure these repository secrets in GitHub before publishing:
+
+| Secret | Description |
+| --- | --- |
+| `DOCKERHUB_USERNAME` | Docker Hub username or organization. |
+| `DOCKERHUB_TOKEN` | Docker Hub access token. |
+
+The image name will be:
+
+```text
+DOCKERHUB_USERNAME/notifymcp
+```
+
+## Example MCP client config: uvx
 
 ```json
 {
@@ -84,6 +122,32 @@ Use a command like this from an MCP-capable host that can launch `uvx`:
 }
 ```
 
+## Example MCP client config: Docker
+
+```json
+{
+  "mcpServers": {
+    "notifymcp": {
+      "command": "docker",
+      "args": [
+        "run",
+        "--rm",
+        "-i",
+        "-e",
+        "MQTT_URL=mqtt://192.168.1.10:1883",
+        "-e",
+        "MQTT_USERNAME=",
+        "-e",
+        "MQTT_PASSWORD=",
+        "-e",
+        "MQTT_TOPIC=notify/test",
+        "<dockerhub-username>/notifymcp:latest"
+      ]
+    }
+  }
+}
+```
+
 ## Local development
 
 ```bash
@@ -91,6 +155,7 @@ uv sync --extra dev
 uv run ruff check .
 uv run pytest
 uv build
+docker build -t notifymcp:local .
 ```
 
 You can also smoke-test the local checkout through uvx:
