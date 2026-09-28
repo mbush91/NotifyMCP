@@ -77,6 +77,14 @@ def test_http_notify_success_and_auth():
 
         status, _ = _post(server, "/notify", {"message": "hello", "qos": 5})
         assert status == 400
+
+        # bool is a subclass of int (True == 1) but must not be accepted as qos
+        status, body = _post(server, "/notify", {"message": "hello", "qos": True})
+        assert status == 400
+        assert body["error"] == "qos must be 0, 1, or 2"
+
+        status, _ = _post(server, "/notify", {"message": "hello", "qos": False})
+        assert status == 400
     finally:
         server.shutdown()
         server.server_close()

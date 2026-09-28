@@ -118,7 +118,9 @@ class NotifyHandler(BaseHTTPRequestHandler):
         if not isinstance(message, str) or not message:
             self._send_json(400, {"ok": False, "error": "message must be a non-empty string"})
             return
-        if qos not in (0, 1, 2):
+        # NOTE: bool is a subclass of int (True == 1), so check it explicitly
+        # to keep the "qos must be numeric 0/1/2" contract.
+        if isinstance(qos, bool) or qos not in (0, 1, 2):
             self._send_json(400, {"ok": False, "error": "qos must be 0, 1, or 2"})
             return
         if not isinstance(retain, bool):

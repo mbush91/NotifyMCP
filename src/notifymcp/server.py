@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import os
+import sys
 from typing import Any
 
 from fastmcp import FastMCP
@@ -51,9 +52,12 @@ def main() -> None:
             http_settings.port,
             http_settings.api_key_hash,
         )
+        # NOTE: stdout is the MCP protocol stream when running over stdio,
+        # so the banner must go to stderr to avoid corrupting JSON-RPC.
         print(
             f"NotifyMCP HTTP listening on {http_settings.host}:{server.server_port} "
-            f"(POST /notify, GET /healthz)"
+            f"(POST /notify, GET /healthz)",
+            file=sys.stderr,
         )
     mcp.run()
 
