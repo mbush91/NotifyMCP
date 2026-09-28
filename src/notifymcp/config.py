@@ -18,6 +18,14 @@ class MqttSettings:
     publish_timeout_seconds: float
 
 
+@dataclass(frozen=True)
+class HttpSettings:
+    host: str
+    port: int
+    api_key_hash: str
+    enabled: bool
+
+
 def _required_env(name: str) -> str:
     value = os.getenv(name, "").strip()
     if not value:
@@ -53,6 +61,13 @@ def _float_env(name: str, default: float) -> float:
         raise RuntimeError(f"{name} must be a number") from exc
 
 
+def _bool_env(name: str, default: bool = False) -> bool:
+    raw = os.getenv(name)
+    if raw is None or raw.strip() == "":
+        return default
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
 def load_settings() -> MqttSettings:
     url = _required_env("MQTT_URL")
     topic = _required_env("MQTT_TOPIC")
@@ -76,4 +91,18 @@ def load_settings() -> MqttSettings:
         use_tls=use_tls,
         keepalive_seconds=_int_env("MQTT_KEEPALIVE_SECONDS", 30),
         publish_timeout_seconds=_float_env("MQTT_PUBLISH_TIMEOUT_SECONDS", 10.0),
+    )
+
+
+def load_http_settings() -> HttpSettings:
+    raw_hash = os.getenv("NOTIFY_API_KEY_HASH", "").strip().lower()
+    if not raw_hash:
+        raise RuntimeError("Missing required environment variable: NOTIFY_API_KEY_HASH")
+    host = os.getenv("HTTP_HOST", "0.0.0.0").strip() or "0.0.0.0"
+    port = _int_env("HTTP_PORT", 8080)
+    return HttpSettings(
+        host=host,
+        port=port,
+        api_key_hash=raw_hash,
+        enabled=_bool_env("HTTP_ENABLED", False),
     )

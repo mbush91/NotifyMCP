@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from fastmcp import FastMCP
 
-from .config import load_settings
+from .config import load_http_settings, load_settings
 from .publisher import publish_to_mqtt
 
 mcp = FastMCP("NotifyMCP")
@@ -39,6 +40,21 @@ def get_mqtt_config() -> dict[str, Any]:
 
 
 def main() -> None:
+    from .http_server import start_in_background
+
+    if os.getenv("HTTP_ENABLED", "").strip().lower() in {"1", "true", "yes", "on"}:
+        mqtt_settings = load_settings()
+        http_settings = load_http_settings()
+        server, _thread = start_in_background(
+            mqtt_settings,
+            http_settings.host,
+            http_settings.port,
+            http_settings.api_key_hash,
+        )
+        print(
+            f"NotifyMCP HTTP listening on {http_settings.host}:{server.server_port} "
+            f"(POST /notify, GET /healthz)"
+        )
     mcp.run()
 
 

@@ -22,6 +22,42 @@ Arguments:
 
 Returns the configured MQTT target without exposing the password.
 
+## HTTP endpoint
+
+A simple stdlib-based HTTP endpoint is available alongside (or instead of) the MCP server:
+
+```bash
+# Generate the hash once and put it in your env file:
+python -c "import hashlib; print(hashlib.sha256(b'your-api-key-here').hexdigest())"
+
+export MQTT_URL="mqtt://192.168.1.10:1883"
+export MQTT_TOPIC="notify/test"
+export NOTIFY_API_KEY_HASH="<sha256 hex of your API key>"
+export HTTP_PORT="8080"
+
+# HTTP-only mode:
+uv run python -m notifymcp.http_server
+
+# Or run MCP (stdio) + HTTP together:
+HTTP_ENABLED=true uv run python -m notifymcp.server
+```
+
+Send a notification:
+
+```bash
+curl -s -X POST http://localhost:8080/notify \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: your-api-key-here" \
+  -d '{"message": "hello from http", "qos": 1, "retain": false}'
+```
+
+Notes:
+
+- `POST /notify` (alias `POST /publish`) requires the raw API key in the `X-API-Key` header (`Authorization: Bearer <key>` also works). Only the SHA-256 hash (`NOTIFY_API_KEY_HASH`) is stored in the env file; the raw key is never stored server-side.
+- Request body is JSON: `message` (required, non-empty string), `qos` (optional, `0`/`1`/`2`, defaults to `1`), `retain` (optional bool, defaults to `false`).
+- `GET /healthz` returns `{"ok": true}` without auth.
+- Responses: `200` published, `400` bad request, `401` bad/missing key, `404` unknown path, `502` MQTT publish failure.
+
 ## Environment variables
 
 Required:
@@ -39,6 +75,10 @@ Optional:
 | `MQTT_PASSWORD` | MQTT password. Leave blank for anonymous brokers. |
 | `MQTT_KEEPALIVE_SECONDS` | MQTT keepalive. Defaults to `30`. |
 | `MQTT_PUBLISH_TIMEOUT_SECONDS` | Publish wait timeout. Defaults to `10`. |
+| `HTTP_ENABLED` | Set to `true` to also start the HTTP endpoint inside `notifymcp` (MCP stdio) process. Defaults to `false`. |
+| `HTTP_HOST` | HTTP bind address. Defaults to `0.0.0.0`. |
+| `HTTP_PORT` | HTTP bind port. Defaults to `8080`. |
+| `NOTIFY_API_KEY_HASH` | SHA-256 hex digest of the HTTP API key. Required for HTTP mode. |
 
 `mqtt://` and `tcp://` default to port `1883`. `mqtts://` and `ssl://` default to port `8883` and enable TLS.
 

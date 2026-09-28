@@ -12,4 +12,6 @@ RUN pip install --no-cache-dir .
 
 USER nobody
 
+EXPOSE 8080
+
 CMD ["python", "-m", "notifymcp.server"]
