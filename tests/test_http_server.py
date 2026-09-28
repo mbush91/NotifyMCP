@@ -85,6 +85,11 @@ def test_http_notify_success_and_auth():
 
         status, _ = _post(server, "/notify", {"message": "hello", "qos": False})
         assert status == 400
+
+        # floats compare equal to ints (1.0 == 1) but Paho needs a real int
+        status, body = _post(server, "/notify", {"message": "hello", "qos": 1.0})
+        assert status == 400
+        assert body["error"] == "qos must be 0, 1, or 2"
     finally:
         server.shutdown()
         server.server_close()

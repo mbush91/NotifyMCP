@@ -118,9 +118,10 @@ class NotifyHandler(BaseHTTPRequestHandler):
         if not isinstance(message, str) or not message:
             self._send_json(400, {"ok": False, "error": "message must be a non-empty string"})
             return
-        # NOTE: bool is a subclass of int (True == 1), so check it explicitly
-        # to keep the "qos must be numeric 0/1/2" contract.
-        if isinstance(qos, bool) or qos not in (0, 1, 2):
+        # NOTE: require the exact int type. bool is a subclass of int
+        # (True == 1) and float 1.0 == 1, so plain membership testing would
+        # accept qos=true or qos=1.0; Paho needs a real int for bit-shifting.
+        if type(qos) is not int or qos not in (0, 1, 2):
             self._send_json(400, {"ok": False, "error": "qos must be 0, 1, or 2"})
             return
         if not isinstance(retain, bool):
