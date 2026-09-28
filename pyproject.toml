@@ -21,6 +21,7 @@ dev = [
 
 [project.scripts]
 notifymcp = "notifymcp.server:main"
+notifymcp-http = "notifymcp.http_server:main"
 
 [build-system]
 requires = ["hatchling>=1.25.0"]
